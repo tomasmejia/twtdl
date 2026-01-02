@@ -7,9 +7,12 @@ from concurrent.futures import ThreadPoolExecutor
 # Third-party imports
 import yt_dlp
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import BaseModel, HttpUrl
 from fastapi.staticfiles import StaticFiles
+
+# Local imports
+from service import VideoDownloaderService
 
 DOWNLOAD_DIR = "downloads"
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
@@ -24,29 +27,9 @@ app.mount("/ui", StaticFiles(directory="static", html=True), name="static")
 class VideoRequest(BaseModel):
     url: HttpUrl
 
-class VideoDownloaderService:
-    def download(self, url: str, filename: str) -> str:
-        output_template = f"{DOWNLOAD_DIR}/{filename}.%(ext)s"
-
-        ydl_opts: Any = {
-            'outtmpl': output_template,
-            'format': 'bestvideo+bestaudio/best',
-            'merge_output_format': 'mp4',
-            'quiet': True,
-            'noplaylist': True,
-        }
-
-        try: 
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([url])
-                return f"{DOWNLOAD_DIR}/{filename}.mp4"
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Download failed: {str(e)}")
-
-
 # deps
 def get_video_service() -> VideoDownloaderService:
-    return VideoDownloaderService()
+    return VideoDownloaderService(DOWNLOAD_DIR)
 
 def remove_file(path: str):
     try:
@@ -56,6 +39,10 @@ def remove_file(path: str):
         print(f"Error removing file {path}: {str(e)}")
 
 # routes 
+@app.get("/")
+async def root():
+    return RedirectResponse(url="/ui/")
+
 @app.post("/download", response_class=FileResponse)
 async def download_video(
     request: VideoRequest,

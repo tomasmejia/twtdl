@@ -2,7 +2,7 @@
 
 Built with Python (FastAPI) and yt-dlp.
 
-There are two interfacess available:
+There are two interfaces available:
 1. *Web UI*: Browser interface to download videos.
 2. *CLI*. Terminal command for quick download.
 

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X Video Downloader</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; padding-top: 50px; background: #f0f2f5; }
+        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 400px; text-align: center; }
+        input { width: 90%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #1d9bf0; color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #1a8cd8; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        #status { margin-top: 15px; font-size: 0.9rem; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>X Downloader</h2>
+        <input type="text" id="urlInput" placeholder="Paste X/Twitter link here">
+        <button onclick="downloadVideo()" id="btn">Download Video</button>
+        <p id="status"></p>
+    </div>
+
+    <script>
+        async function downloadVideo() {
+            const url = document.getElementById('urlInput').value;
+            const btn = document.getElementById('btn');
+            const status = document.getElementById('status');
+            
+            if (!url) return alert("Please paste a URL");
+
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+            status.innerText = "Server is downloading & merging...";
+
+            try {
+                const response = await fetch('/download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                });
+
+                if (!response.ok) throw new Error("Download failed");
+
+                const blob = await response.blob();
+                
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                const filename = response.headers.get('Content-Disposition')?.split('filename=')[1] || 'video.mp4';
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                
+                status.innerText = "Done! Check your downloads.";
+            } catch (e) {
+                status.innerText = "Error: " + e.message;
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Download Video";
+            }
+        }
+    </script>
+</body>
+</html>
